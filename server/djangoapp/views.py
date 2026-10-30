@@ -82,7 +82,11 @@ def get_dealer_reviews(request,dealer_id):
 
 @require_GET
 def get_cars(request):
-    return JsonResponse({"status":200,"CarMakes":list(CarMake.objects.values("id","name","description")),"CarModels":list(CarModel.objects.values("id","name","car_make","car_make__name","type","year"))})
+    models=list(CarModel.objects.values("id","name","car_make","car_make__name","type","year"))
+    for model in models:
+        model["CarModel"]=model["name"]
+        model["CarMake"]=model["car_make__name"]
+    return JsonResponse({"status":200,"CarMakes":list(CarMake.objects.values("id","name","description")),"CarModels":models})
 
 @require_GET
 @api_errors

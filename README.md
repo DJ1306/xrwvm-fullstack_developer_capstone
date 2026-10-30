@@ -1,7 +1,7 @@
-# Cars Dealership Review Application
+# fullstack_developer_capstone
 
-- **Repository name:** cars-dealership-capstone
-- **Project name:** Cars Dealership Review Application
+- **Repository name:** xrwvm-fullstack_developer_capstone
+- **Project name:** fullstack_developer_capstone
 - **Course:** IBM Cloud Native Full Stack Development Capstone
 
 A responsive React application for finding US car dealerships, filtering by state,
