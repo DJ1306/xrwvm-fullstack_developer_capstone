@@ -1,0 +1,39 @@
+name: Dealership CI
+on:
+  push:
+  pull_request:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Python dependencies
+        run: pip install -r server/requirements.txt
+      - name: Check Django and migration consistency
+        working-directory: server
+        run: |
+          python manage.py check
+          python manage.py makemigrations --check --dry-run
+      - name: Test authentication, catalog, and review APIs
+        working-directory: server
+        run: python manage.py test djangoapp -v 2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install and build React frontend
+        working-directory: server/frontend
+        run: |
+          npm ci
+          npm run build
+      - name: Install Node API and validate JavaScript
+        working-directory: server/database
+        run: |
+          npm ci --ignore-scripts
+          node --check app.js
+      - name: Collect static assets
+        working-directory: server
+        run: python manage.py collectstatic --noinput
