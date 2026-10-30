@@ -1,0 +1,35 @@
+name: Lint Code
+on:
+  push:
+  pull_request:
+jobs:
+  python-lint:
+    name: Lint Python Files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: pip install flake8
+      - name: Print working directory
+        run: pwd
+      - name: Run Linter
+        run: flake8 server
+  javascript-lint:
+    name: Lint JavaScript Files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install JSHint
+        run: npm install --global jshint@2.13.6
+      - name: Run Linter
+        run: jshint --config .jshintrc server/database/*.js
