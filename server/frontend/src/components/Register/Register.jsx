@@ -1,0 +1,8 @@
+import React,{useState}from'react';
+import{useNavigate,Link}from'react-router-dom';
+export default function Register({onLogin}){
+ const navigate=useNavigate(),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+ async function submit(event){event.preventDefault();setBusy(true);setError('');
+  try{const data=Object.fromEntries(new FormData(event.currentTarget));const response=await fetch('/djangoapp/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const result=await response.json();if(!response.ok)throw new Error(result.error||'Unable to register');onLogin(result.userName);navigate('/dealers');}catch(e){setError(e.message);}finally{setBusy(false);}}
+ return <main className="auth"><p className="eyebrow">JOIN THE COMMUNITY</p><h1>Create your account</h1><p>Save your voice for the next driver's journey.</p><form onSubmit={submit}><label>Username<input name="userName" autoComplete="username" required/></label><div className="columns"><label>First Name<input name="firstName" autoComplete="given-name" required/></label><label>Last Name<input name="lastName" autoComplete="family-name" required/></label></div><label>Email<input name="email" type="email" autoComplete="email" required/></label><label>Password<input name="password" type="password" autoComplete="new-password" minLength="8" required/></label>{error&&<p role="alert" className="error">{error}</p>}<button disabled={busy}>{busy?'Registering…':'Register'}</button></form><p>Already a member? <Link to="/login">Sign in</Link></p></main>;
+}

@@ -1,0 +1,154 @@
+# Replace the three YOUR_REGISTRY image references and the public hostname.
+# Create dealership-secrets with django-secret-key before applying.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dealership-mongo
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dealership-sqlite
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dealership-mongo
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: {app: dealership-mongo}
+  template:
+    metadata:
+      labels: {app: dealership-mongo}
+    spec:
+      containers:
+        - name: mongo
+          image: mongo:7
+          ports: [{containerPort: 27017}]
+          volumeMounts: [{name: data, mountPath: /data/db}]
+      volumes:
+        - name: data
+          persistentVolumeClaim: {claimName: dealership-mongo}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dealership-mongo
+spec:
+  selector: {app: dealership-mongo}
+  ports: [{port: 27017, targetPort: 27017}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dealership-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: dealership-api}
+  template:
+    metadata:
+      labels: {app: dealership-api}
+    spec:
+      containers:
+        - name: api
+          image: YOUR_REGISTRY/cars-dealership-api:latest
+          ports: [{containerPort: 3030}]
+          env:
+            - {name: MONGODB_URI, value: "mongodb://dealership-mongo:27017"}
+          readinessProbe:
+            httpGet: {path: /, port: 3030}
+            initialDelaySeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dealership-api
+spec:
+  selector: {app: dealership-api}
+  ports: [{port: 3030, targetPort: 3030}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dealership-sentiment
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: dealership-sentiment}
+  template:
+    metadata:
+      labels: {app: dealership-sentiment}
+    spec:
+      containers:
+        - name: sentiment
+          image: YOUR_REGISTRY/cars-dealership-sentiment:latest
+          ports: [{containerPort: 5050}]
+          readinessProbe:
+            httpGet: {path: /, port: 5050}
+            initialDelaySeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dealership-sentiment
+spec:
+  selector: {app: dealership-sentiment}
+  ports: [{port: 5050, targetPort: 5050}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dealership-web
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: {app: dealership-web}
+  template:
+    metadata:
+      labels: {app: dealership-web}
+    spec:
+      containers:
+        - name: web
+          image: YOUR_REGISTRY/cars-dealership-web:latest
+          ports: [{containerPort: 8000}]
+          env:
+            - {name: BACKEND_URL, value: "http://dealership-api:3030"}
+            - {name: SENTIMENT_ANALYZER_URL, value: "http://dealership-sentiment:5050"}
+            - {name: DJANGO_DEBUG, value: "false"}
+            - {name: DJANGO_ALLOWED_HOSTS, value: "YOUR_PUBLIC_HOSTNAME"}
+            - {name: COOKIE_SECURE, value: "true"}
+            - {name: SQLITE_PATH, value: "/data/db.sqlite3"}
+            - name: DJANGO_SECRET_KEY
+              valueFrom:
+                secretKeyRef: {name: dealership-secrets, key: django-secret-key}
+          volumeMounts: [{name: sqlite, mountPath: /data}]
+          readinessProbe:
+            httpGet: {path: /, port: 8000, httpHeaders: [{name: Host, value: YOUR_PUBLIC_HOSTNAME}]}
+            initialDelaySeconds: 15
+      volumes:
+        - name: sqlite
+          persistentVolumeClaim: {claimName: dealership-sqlite}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dealership-web
+spec:
+  selector: {app: dealership-web}
+  ports: [{port: 8000, targetPort: 8000}]

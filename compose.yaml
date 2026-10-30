@@ -1,0 +1,28 @@
+services:
+  mongo:
+    image: mongo:7
+    volumes:
+      - mongo-data:/data/db
+  database:
+    build: server/database
+    environment:
+      MONGODB_URI: mongodb://mongo:27017
+    depends_on:
+      - mongo
+  sentiment:
+    build: server/djangoapp/microservices
+  web:
+    build: server
+    ports:
+      - "8000:8000"
+    environment:
+      BACKEND_URL: http://database:3030
+      SENTIMENT_ANALYZER_URL: http://sentiment:5050
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:?Set DJANGO_SECRET_KEY in .env}
+      DJANGO_DEBUG: "false"
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+    depends_on:
+      - database
+      - sentiment
+volumes:
+  mongo-data:

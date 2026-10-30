@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const reviews = new Schema({
+  sentiment: { type: String, enum: ['positive', 'neutral', 'negative'] },
 	id: {
     type: Number,
     required: true,
